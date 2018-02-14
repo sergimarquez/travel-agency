@@ -1,13 +1,26 @@
 var gulp = require('gulp'),
 svgSprite = require('gulp-svg-sprite'),
 rename = require ('gulp-rename'),
-del = require('del');
+del = require('del'),
+svg2png = require('gulp-svg2png');
 
 
 
 var config = {
+	shape: {
+		spacing: {
+			padding: 1
+		}
+	},
 	mode: {
 		css: {
+			variables: {
+				replaceSvgWithPng: function () {
+					return function(sprite, render) {
+						return render(sprite).split('.svg').join('.png');
+					}
+				}
+			},
 			sprite: 'sprite.svg',
 			render : {
 				css: {
@@ -36,17 +49,18 @@ gulp.task('copySpriteCSS', ['createSprite'], function() {
 		.pipe(gulp.dest('./app/assets/styles/modules'));
 });
 
-//Move the svg file to a folder inside images
-gulp.task('copySpriteGraphic', ['copySpriteCSS'], function() {
+gulp.task('createPngCopy', ['createSprite'], function() {
 	return gulp.src('./app/temp/sprite/css/*.svg')
+		.pipe(svg2png())
+		.pipe(gulp.dest('./app/temp/sprite/css'));
+});
+
+//Move the svg file to a folder inside images
+gulp.task('copySpriteGraphic', ['createPngCopy'], function() {
+	return gulp.src('./app/temp/sprite/css/*.{svg,png}')
 		.pipe(gulp.dest('./app/assets/images/sprites'));
 });
 
-
-// gulp.task('copySpriteGraphic', ['copySpriteCSS'], function() {
-// 	return gulp.src('.app/temp/sprite/css/**/*.svg')
-// 		.pipe(gulp.dest('./app/assets/images/sprites'));
-// });
 
 
 gulp.task('endClean', ['copySpriteGraphic', 'copySpriteCSS'], function() {
@@ -54,5 +68,5 @@ gulp.task('endClean', ['copySpriteGraphic', 'copySpriteCSS'], function() {
 });
 
 // Automatically runs the tasks above so we can add new icons easily
-gulp.task('icons', ['beginClean', 'createSprite', 'copySpriteCSS', 'copySpriteGraphic', 'endClean']);
+gulp.task('icons', ['beginClean', 'createSprite', 'createPngCopy', 'copySpriteCSS', 'copySpriteGraphic', 'endClean']);
 
